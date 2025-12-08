@@ -516,12 +516,12 @@ const Dashboard = () => {
       {/* Stat Cards */}
       <div className="row g-3 mb-4">
         <StatCard title="Total Players" value={stats?.players} meta="Players" />
-        
+
         {/* FIX: Use .length to get the count */}
-        <StatCard 
-            title="Pending Evaluations" 
-            value={stats?.pendingEvaluations?.length ?? 0} 
-            meta="Pending" 
+        <StatCard
+          title="Pending Evaluations"
+          value={stats?.pendingEvaluations?.length ?? 0}
+          meta="Pending"
         />
 
 
@@ -531,7 +531,7 @@ const Dashboard = () => {
             <StatCard title="Total Evaluations" value={stats?.totalEvaluations} meta="Evaluations" />
           </>
         ) : (
-          <StatCard title="Team Players" value={players.filter(p => p.team_id).length} meta="Active" />
+          <StatCard title="Total Evaluations" value={players.filter(p => p.team_id).length} meta="Active" />
         )}
       </div>
 
@@ -630,7 +630,7 @@ const Dashboard = () => {
       </div>
 
       {/* Admin Section */}
-      {isAdmin && stats?.loginAudit && (
+      {/* {isAdmin && stats?.loginAudit && (
         <div className="row mt-4">
           <div className="col-12">
             <div className="card">
@@ -653,7 +653,19 @@ const Dashboard = () => {
                           <tr key={i}>
                             <td>{u.u_name}</td>
                             <td>{u.u_email}</td>
-                            <td>{u.last_login ? new Date(u.last_login).toLocaleString() : '-'}</td>
+                            <td>
+                              {u.last_login
+                                ? new Date(u.last_login).toLocaleString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })
+                                : "-"}
+                            </td>
+
                           </tr>
                         ))}
                       </tbody>
@@ -661,6 +673,80 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="text-muted">No login data</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )} */}
+
+      {isAdmin && stats?.loginAudit && (
+        <div className="row mt-4">
+          <div className="col-12">
+            <div className="card shadow-sm border-0">
+              <div className="card-header bg-white text-white p-3 d-flex justify-content-between align-items-center">
+                <h5 className="mb-0 fw-bold">
+                  <i className="fas fa-history me-2"></i>
+                  Recent Login Activity
+                </h5>
+                {stats?.loginAudit?.length && (
+                  <span className="badge bg-light text-primary">
+                    Total {stats.loginAudit.length} Entries
+                  </span>
+                )}
+              </div>
+              <div className="card-body p-0">
+                {Array.isArray(stats.loginAudit) && stats.loginAudit.length ? (
+                  <div className="table-responsive">
+                    <table className="table table-hover table-sm mb-0 align-middle">
+                      <thead>
+                        <tr>
+                          <th className="text-muted fw-normal" style={{ width: '30%' }}>USER NAME</th>
+                          <th className="text-muted fw-normal" style={{ width: '40%' }}>EMAIL ADDRESS</th>
+                          <th className="text-muted fw-normal" style={{ width: '30%' }}>LAST LOGIN</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.loginAudit.map((u, i) => (
+                          <tr key={i}>
+                            <td className="fw-semibold text-dark">{u.u_name}</td>
+                            <td className="text-muted small">{u.u_email}</td>
+                            <td>
+                              <span className="badge bg-light text-dark fw-normal p-2">
+                                {u.last_login ? (() => {
+                                  const dateString = u.last_login;
+                                  const lastLoginTime = new Date(dateString);
+                                  const now = new Date();
+                                  const diffInMinutes = Math.round((now - lastLoginTime) / (1000 * 60));
+
+                                  if (diffInMinutes < 60) {
+                                    return `${diffInMinutes} minutes ago`;
+                                  } else if (diffInMinutes < 1440) { // 24 hours
+                                    return `${Math.round(diffInMinutes / 60)} hours ago`;
+                                  }
+
+                                  // Standard long format for older dates
+                                  return lastLoginTime.toLocaleString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  });
+                                })() : "-"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted py-4">
+                    <i className="fas fa-lock-open fs-4 mb-2"></i>
+                    <p className="mb-0">No recent login data available for display.</p>
+                  </div>
                 )}
               </div>
             </div>

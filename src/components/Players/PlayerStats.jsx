@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import topTost from '../../utils/topTost';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL;
 
@@ -35,6 +36,43 @@ const AddPlayerStats = () => {
     });
   };
 
+  // const submitStats = async (e) => {
+  //   e.preventDefault();
+  //   setSaving(true);
+
+  //   try {
+  //     const res = await fetch(
+  //       `${BASE_URL}/api/coach/stats/add/${playerId}`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(form),
+  //       }
+  //     );
+
+  //     const json = await res.json();
+
+  //     if (!res.ok) {
+  //       alert(json.message || "Failed to save stats");
+  //       setSaving(false);
+  //       return;
+  //     }
+
+  //     alert("Player stats saved successfully");
+  //     navigate(`/player/profile/${playerId}`);
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Something went wrong");
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
+
+  // FIELD LABELS + DESCRIPTION
+  
   const submitStats = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -55,22 +93,35 @@ const AddPlayerStats = () => {
       const json = await res.json();
 
       if (!res.ok) {
-        alert(json.message || "Failed to save stats");
+        // SERVER ERROR: Error toast aur setSaving(false) hamesha rehna chahiye,
+        // Lekin aapki request par is block ko khali chhor diya gaya hai.
+        // Agar aap chahte hain ki error par kuch bhi na ho, to ye code chalega.
+        
+        // ********************
+        // NOTE: Ye block ab koi feedback nahi dega agar server se error aaya.
+        // Sirf setSaving(false) karke function se bahar nikal jayega.
+        // ********************
+        
         setSaving(false);
         return;
       }
 
-      alert("Player stats saved successfully");
+      // SUCCESS: Success toast will still show
+      topTost("Player stats saved successfully"); 
+      
+      // Navigate after successful save
       navigate(`/player/profile/${playerId}`);
     } catch (err) {
+      // CATCH ERROR: Console error aur error toast hata diya gaya hai.
+      // Ye block ab khali hai.
+      // System error hony par bas console.error(err) kar ke finally block par jayega.
       console.error(err);
-      alert("Something went wrong");
+      
     } finally {
       setSaving(false);
     }
-  };
-
-  // FIELD LABELS + DESCRIPTION
+};
+  
   const fields = [
     {
       name: "matches",

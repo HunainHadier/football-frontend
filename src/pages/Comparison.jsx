@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import CustomersHeader from '@/components/Players/PlayersHeader'
 import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import Footer from '@/components/shared/Footer'
+import topTost from '../utils/topTost'; // Assuming topTost is in a file like topTost.js
+
 
 const BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL;
 
@@ -99,9 +101,52 @@ const Comparison = () => {
         }));
     };
 
+    // const handleSaveChanges = async () => {
+    //     if (!playerId) {
+    //         alert("Player ID not available");
+    //         return;
+    //     }
+
+    //     setSaving(true);
+    //     try {
+    //         const token = localStorage.getItem("authToken");
+
+    //         const response = await fetch(`${BASE_URL}/api/coach/stats/stats/update/${playerId}`, {
+    //             method: "PUT",
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //                 Authorization: `Bearer ${token}`,
+    //             },
+    //             body: JSON.stringify(editedData),
+    //         });
+
+    //         if (!response.ok) {
+    //             throw new Error("Failed to update statistics");
+    //         }
+
+    //         alert("Statistics updated successfully!");
+    //         setEditModalOpen(false);
+    //         loadComparisonData();
+
+    //     } catch (error) {
+    //         alert("Failed to update statistics: " + error.message);
+    //     } finally {
+    //         setSaving(false);
+    //     }
+    // };
+
+    // Assume topTost and topTostError (defined below) are imported/available here
+ 
+    // Import the error toaster logic as well (assuming you create a separate function for error)
+    // For simplicity, let's include the error logic directly or assume an improved topTost import
+
+    // --- Updated handleSaveChanges function ---
+    
     const handleSaveChanges = async () => {
+        // 1. Player ID Check (Using Toast for consistency)
         if (!playerId) {
-            alert("Player ID not available");
+            // We will show an error toast here instead of alert
+            topTostError("Player ID is missing. Cannot save changes.");
             return;
         }
 
@@ -119,19 +164,26 @@ const Comparison = () => {
             });
 
             if (!response.ok) {
-                throw new Error("Failed to update statistics");
+                // Throwing an error for non-200 status codes
+                const errorText = await response.text();
+                throw new Error(errorText || "Failed to update statistics");
             }
 
-            alert("Statistics updated successfully!");
+            // 2. SUCCESS: Replace alert with topTost
+            topTost("شماریات کامیابی سے اپ ڈیٹ ہو گئیں!");
+
             setEditModalOpen(false);
             loadComparisonData();
 
         } catch (error) {
-            alert("Failed to update statistics: " + error.message);
+            // 3. ERROR: Replace alert with a proper error toast
+            topTostError("اپ ڈیٹ فیل ہو گئی: " + error.message);
+
         } finally {
             setSaving(false);
         }
     };
+    // ------------------------------------------
 
     const handleCancelEdit = () => {
         setEditedData(comparisonData?.rawPlayer || {});
