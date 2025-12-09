@@ -164,7 +164,7 @@ const TablePagination = ({ table }) => {
                     style={{ margin: 0, padding: 0, border: "none" }}
                 >
                     {/* Display current range and total count */}
-                    Showing **{pageCount > 0 ? currentPage : 0}** to **{pageCount}** of **{totalEntries}** entries
+                    Showing {pageCount > 0 ? currentPage : 0} to {pageCount} of {totalEntries} entries
                 </div>
             </div>
 

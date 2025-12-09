@@ -46,6 +46,11 @@ const CoachesHeader = () => {
                         <span>Create Customer</span>
                     </Link>
                 )}
+                <img
+                    src="/images/football-vector-free-11.png"
+                    alt="Logo"
+                    style={{ width: '120px', height: '60px' }} // आप अपनी ज़रूरत के हिसाब से width/height बदल सकते हैं
+                />
             </div>
 
             <div id="collapseOne" className="accordion-collapse collapse page-header-collapse">
