@@ -72,7 +72,7 @@ const AddPlayerStats = () => {
   // };
 
   // FIELD LABELS + DESCRIPTION
-  
+
   const submitStats = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -96,19 +96,19 @@ const AddPlayerStats = () => {
         // SERVER ERROR: Error toast aur setSaving(false) hamesha rehna chahiye,
         // Lekin aapki request par is block ko khali chhor diya gaya hai.
         // Agar aap chahte hain ki error par kuch bhi na ho, to ye code chalega.
-        
+
         // ********************
         // NOTE: Ye block ab koi feedback nahi dega agar server se error aaya.
         // Sirf setSaving(false) karke function se bahar nikal jayega.
         // ********************
-        
+
         setSaving(false);
         return;
       }
 
       // SUCCESS: Success toast will still show
-      topTost("Player stats saved successfully"); 
-      
+      topTost("Player stats saved successfully");
+
       // Navigate after successful save
       navigate(`/player/profile/${playerId}`);
     } catch (err) {
@@ -116,78 +116,151 @@ const AddPlayerStats = () => {
       // Ye block ab khali hai.
       // System error hony par bas console.error(err) kar ke finally block par jayega.
       console.error(err);
-      
+
     } finally {
       setSaving(false);
     }
-};
-  
+  };
+
+  // const fields = [
+  //   {
+  //     name: "matches",
+  //     label: "Matches (M)",
+  //     desc: "Total matches played during a career.",
+  //   },
+  //   {
+  //     name: "goals",
+  //     label: "Goals (G)",
+  //     desc: "Total number of goals scored by a player during all Matches.",
+  //   },
+  //   {
+  //     name: "assists",
+  //     label: "Assists (A)",
+  //     desc: "Passes that directly lead to a goal scored in all Matches.",
+  //   },
+  //   {
+  //     name: "shots",
+  //     label: "Shots (Sh)",
+  //     desc: "Total attempts to score (shots on target + shots that miss).",
+  //   },
+  //   {
+  //     name: "shots_on_goal",
+  //     label: "Shots On Goal (SOG)",
+  //     desc: "Shots that were on target and would score unless saved.",
+  //   },
+  //   {
+  //     name: "big_chances",
+  //     label: "Big Chances",
+  //     desc: "High-quality scoring situations including penalties.",
+  //   },
+  //   {
+  //     name: "key_passes",
+  //     label: "Key Passes",
+  //     desc: "Passes that lead directly to a shot on goal.",
+  //   },
+  //   {
+  //     name: "tackles",
+  //     label: "Tackles",
+  //     desc: "Attempts to win the ball (won or lost) in all matches.",
+  //   },
+  //   {
+  //     name: "pass_completion",
+  //     label: "Pass Completion (%)",
+  //     desc: "Successful passes divided by total passes attempted.",
+  //   },
+  //   {
+  //     name: "ejections",
+  //     label: "Ejections (Red Cards)",
+  //     desc: "Number of red cards received by the player in all matches.",
+  //   },
+
+  //   {
+  //     name: "minutes_played",
+  //     label: "Minutes Played (MIN)",
+  //     desc: "Total time spent on the field during all matches.",
+  //   },
+  //   {
+  //     name: "cautions",
+  //     label: "Cautions & Ejections",
+  //     desc: "Yellow and red cards received during all matches.",
+  //   },
+  //   {
+  //     name: "progressive_carries",
+  //     label: "Progressive Carries",
+  //     desc: "Carries progressing the ball forward more than 5 meters.",
+  //   },
+  //   {
+  //     name: "defensive_actions",
+  //     label: "Defensive Actions",
+  //     desc: "Tackles, interceptions, and blocks made by the player.",
+  //   },
+  // ];
+
   const fields = [
     {
       name: "matches",
       label: "Matches (M)",
-      desc: "Total matches played during a year.",
+      desc: "Total number of matches played during a player's career.",
     },
     {
       name: "goals",
       label: "Goals (G)",
-      desc: "Total number of goals scored by a player during a Match.",
+      desc: "Total number of goals scored by the player across all matches.",
     },
     {
       name: "assists",
       label: "Assists (A)",
-      desc: "Passes that directly lead to a goal scored in a Match.",
+      desc: "Passes that directly result in a goal across all matches.",
     },
     {
       name: "shots",
       label: "Shots (Sh)",
-      desc: "Total attempts to score (shots on target + shots that miss).",
+      desc: "Total attempts to score, including shots on target and missed shots.",
     },
     {
       name: "shots_on_goal",
-      label: "Shots On Goal (SOG)",
-      desc: "Shots that were on target and would score unless saved.",
+      label: "Shots on Goal (SOG)",
+      desc: "Shots that were on target and would have scored if not saved.",
     },
     {
       name: "big_chances",
       label: "Big Chances",
-      desc: "High-quality scoring situations including penalties.",
+      desc: "High-quality scoring opportunities, including penalties.",
     },
     {
       name: "key_passes",
       label: "Key Passes",
-      desc: "Passes that lead directly to a shot on goal.",
+      desc: "Passes that directly lead to a shot on goal.",
     },
     {
       name: "tackles",
       label: "Tackles",
-      desc: "Attempts to win the ball (won or lost) in a match.",
+      desc: "Attempts to win the ball, whether successful or unsuccessful.",
     },
     {
       name: "pass_completion",
       label: "Pass Completion (%)",
-      desc: "Successful passes divided by total passes attempted.",
+      desc: "Percentage of successful passes out of total passes attempted.",
     },
     {
       name: "ejections",
-      label: "Ejections (Red Cards)",
-      desc: "Number of red cards received by the player in a match.",
+      label: "Red Cards",
+      desc: "Total number of red cards received by the player.",
     },
-
     {
       name: "minutes_played",
       label: "Minutes Played (MIN)",
-      desc: "Total time spent on the field during matches.",
+      desc: "Total time spent on the field across all matches.",
     },
     {
       name: "cautions",
-      label: "Cautions & Ejections",
-      desc: "Yellow and red cards received during a match.",
+      label: "Cautions (Yellow Cards)",
+      desc: "Total number of yellow cards received by the player.",
     },
     {
       name: "progressive_carries",
       label: "Progressive Carries",
-      desc: "Carries progressing the ball forward more than 5 meters.",
+      desc: "Carries that move the ball forward by more than 5 meters.",
     },
     {
       name: "defensive_actions",
@@ -195,6 +268,7 @@ const AddPlayerStats = () => {
       desc: "Tackles, interceptions, and blocks made by the player.",
     },
   ];
+
 
   return (
     <div className="container py-4">
