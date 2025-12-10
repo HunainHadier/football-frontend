@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import CustomersHeader from '@/components/Players/PlayersHeader'
 import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import Footer from '@/components/shared/Footer'
+// Assuming you have topTost and topTostError imported, as is common practice
+import topTost from '../utils/topTost'; 
+
+
 
 const BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL;
 
@@ -20,9 +24,8 @@ const TeamComparisonPage = () => {
     const [editedData, setEditedData] = useState({});
     const [saving, setSaving] = useState(false);
 
-    // Stat Labels
+    // Stat Labels (Excluding 'matches' from the mapped list for the main table)
     const statLabels = [
-        // { key: "matches", label: "Matches" },
         { key: "goals", label: "Goals" },
         { key: "assists", label: "Assists" },
         { key: "shots", label: "Shots" },
@@ -47,36 +50,40 @@ const TeamComparisonPage = () => {
         try {
             const token = localStorage.getItem("authToken");
             const res = await fetch(
-                `${BASE_URL}/api/stats/average/${teamId}`,
+                // Assuming this API fetches both raw and averaged data
+                `${BASE_URL}/api/stats/average/${teamId}`, 
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             const json = await res.json();
-            console.log("Full API Response:", json); // Debugging
 
             if (!res.ok) {
                 throw new Error(json.message || "Failed to load team stats");
             }
 
-            // Check different possible response structures
+            let rawTeamData = {};
+            let teamAvgData = {};
+
+            // Determine data structure from response
             if (json.rawTeam || json.team) {
-                setTeamData({
-                    rawTeam: json.rawTeam || {},
-                    team: json.team || {}
-                });
+                rawTeamData = json.rawTeam || {};
+                teamAvgData = json.team || {};
             } else if (json.data) {
-                // Agar data key mein hai
-                setTeamData({
-                    rawTeam: json.data.rawTeam || {},
-                    team: json.data.team || {}
-                });
+                rawTeamData = json.data.rawTeam || {};
+                teamAvgData = json.data.team || {};
             } else {
-                // Direct team data
-                setTeamData({
-                    rawTeam: json || {},
-                    team: json || {}
-                });
+                // Direct team data (assuming raw is also the average if no split)
+                rawTeamData = json || {};
+                teamAvgData = json || {};
             }
+
+            setTeamData({
+                rawTeam: rawTeamData,
+                team: teamAvgData
+            });
+            
+            // Initialize editedData with raw team stats (including 'matches')
+            setEditedData(rawTeamData);
 
         } catch (err) {
             console.error("Error loading team data:", err);
@@ -88,38 +95,30 @@ const TeamComparisonPage = () => {
 
     // Edit modal functions
     const handleEditClick = () => {
-        if (teamData?.rawTeam) {
-            const editableData = {
-                matches: teamData.rawTeam.matches || 0,
-                goals: teamData.rawTeam.goals || 0,
-                assists: teamData.rawTeam.assists || 0,
-                shots: teamData.rawTeam.shots || 0,
-                shots_on_goal: teamData.rawTeam.shots_on_goal || 0,
-                big_chances: teamData.rawTeam.big_chances || 0,
-                key_passes: teamData.rawTeam.key_passes || 0,
-                tackles: teamData.rawTeam.tackles || 0,
-                pass_completion_pct: teamData.rawTeam.pass_completion_pct || 0,
-                minutes: teamData.rawTeam.minutes || 0,
-                cautions: teamData.rawTeam.cautions || 0,
-                ejections: teamData.rawTeam.ejections || 0,
-                progressive_carries: teamData.rawTeam.progressive_carries || 0,
-                defensive_actions: teamData.rawTeam.defensive_actions || 0
-            };
-            setEditedData(editableData);
-        }
+        // Use the rawTeam data for editing
+        setEditedData(teamData?.rawTeam || {});
         setEditModalOpen(true);
     };
 
     const handleInputChange = (key, value) => {
+        let processedValue;
+        if (key === 'matches' || key === 'minutes') {
+            // Treat matches and minutes as integers
+            processedValue = parseInt(value) || 0;
+        } else {
+            // Treat other stats as floats
+            processedValue = parseFloat(value) || 0;
+        }
+
         setEditedData(prev => ({
             ...prev,
-            [key]: parseFloat(value) || 0
+            [key]: processedValue
         }));
     };
 
     const handleSaveChanges = async () => {
         if (!teamId) {
-            alert("Team ID not available");
+            topTostError("Team ID not available. Cannot save changes.");
             return;
         }
 
@@ -127,25 +126,13 @@ const TeamComparisonPage = () => {
         try {
             const token = localStorage.getItem("authToken");
 
-            // Prepare data for update
-            const updateData = {
-                matches: editedData.matches || 0,
-                goals: editedData.goals || 0,
-                assists: editedData.assists || 0,
-                shots: editedData.shots || 0,
-                shots_on_goal: editedData.shots_on_goal || 0,
-                big_chances: editedData.big_chances || 0,
-                key_passes: editedData.key_passes || 0,
-                tackles: editedData.tackles || 0,
-                pass_completion_pct: editedData.pass_completion_pct || 0,
-                minutes: editedData.minutes || 0,
-                cautions: editedData.cautions || 0,
-                ejections: editedData.ejections || 0,
-                progressive_carries: editedData.progressive_carries || 0,
-                defensive_actions: editedData.defensive_actions || 0
-            };
+            // Remove non-stat keys like ts_id, team_id, year, created_at before sending for update
+            const { ts_id, team_id, year, created_at, ...dataToUpdate } = editedData;
 
-            console.log("Sending team update data:", updateData);
+            // Ensure matches is sent as a number
+            dataToUpdate.matches = parseInt(editedData.matches) || 0;
+            
+            console.log("Sending team update data:", dataToUpdate);
 
             const response = await fetch(`${BASE_URL}/api/coach/stats/stats/update-team/${teamId}`, {
                 method: "PUT",
@@ -153,7 +140,7 @@ const TeamComparisonPage = () => {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(updateData),
+                body: JSON.stringify(dataToUpdate),
             });
 
             const result = await response.json();
@@ -162,21 +149,22 @@ const TeamComparisonPage = () => {
                 throw new Error(result.message || "Failed to update team statistics");
             }
 
-            alert("Team statistics updated successfully!");
+            topTost("Team statistics updated successfully!");
 
-            // Modal band karein aur data refresh karein
+            // Close modal and refresh data
             setEditModalOpen(false);
-            loadTeamData(); // Data refresh karein
+            loadTeamData(); 
 
         } catch (error) {
             console.error("Team update error:", error);
-            alert("Failed to update team statistics: " + error.message);
+            topTostError("Failed to update team statistics: " + error.message);
         } finally {
             setSaving(false);
         }
     };
 
     const handleCancelEdit = () => {
+        // Reset editedData to the original raw data on cancel
         setEditedData(teamData?.rawTeam || {});
         setEditModalOpen(false);
     };
@@ -188,14 +176,19 @@ const TeamComparisonPage = () => {
     // Safe data access
     const getTeamValue = (data, key) => {
         if (!data) return 0;
+        // Use the raw value for matches in the title
+        if (key === 'matches') return parseInt(data[key] || 0); 
         return parseFloat(data[key] || 0);
     };
+
+    const safeRawTeam = teamData?.rawTeam || {};
 
     return (
         <>
             <PageHeader>
                 <CustomersHeader />
             </PageHeader>
+            
             <div className='main-content'>
                 <div className='container py-4'>
                     <div className="d-flex justify-content-between align-items-center mb-4">
@@ -203,6 +196,8 @@ const TeamComparisonPage = () => {
                             ← Back to Teams
                         </button>
 
+                        <h4 className="mb-0">Team Statistics</h4>
+                        
                         {user?.role !== "ADMIN" && (
                             <button
                                 className="btn btn-warning d-flex align-items-center gap-2"
@@ -213,7 +208,6 @@ const TeamComparisonPage = () => {
                                 Edit Stats
                             </button>
                         )}
-
                     </div>
 
                     {loading ? (
@@ -230,16 +224,19 @@ const TeamComparisonPage = () => {
                         </div>
                     ) : teamData ? (
                         <div className="table-responsive">
-                            <h5>Team Statistics</h5>
+                            {/* --- 🎯 Update Table Title with Matches Played --- */}
+                            <h5>Per-Match Averages (Total Matches: {safeRawTeam.matches || 0})</h5>
+                            
                             <table className="table table-striped table-hover">
                                 <thead className="text-white bg-dark">
                                     <tr>
                                         <th>Stat</th>
-                                        <th className="text-center">Team Actual Value</th>
-                                        <th className="text-center">Team Score Per Match</th>
+                                        <th className="text-center">Team Actual Value (Raw Total)</th>
+                                        <th className="text-center">Team Score Per Match (Average)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {/* Matches is not listed here, but is used in calculations */}
                                     {statLabels.map(({ key, label }) => {
                                         const teamRawVal = getTeamValue(teamData.rawTeam, key);
                                         const teamAvg = getTeamValue(teamData.team, key);
@@ -267,7 +264,7 @@ const TeamComparisonPage = () => {
             </div>
             <Footer />
 
-            {/* Edit Team Stats Modal */}
+            {/* --- Edit Team Stats Modal --- */}
             {editModalOpen && (
                 <div
                     className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
@@ -278,7 +275,7 @@ const TeamComparisonPage = () => {
                         style={{ width: "90%", maxWidth: 800, maxHeight: "85vh", overflowY: "auto" }}
                     >
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h5 className="fw-bold">Edit Team Statistics</h5>
+                            <h5 className="fw-bold">Edit Team Statistics (Raw Totals)</h5>
                             <button
                                 className="btn btn-sm btn-danger"
                                 onClick={handleCancelEdit}
@@ -289,7 +286,6 @@ const TeamComparisonPage = () => {
                         </div>
 
                         <div className="table-responsive">
-                            <h6>Edit Team Actual Values</h6>
                             <table className="table table-striped table-hover">
                                 <thead className="text-white bg-dark">
                                     <tr>
@@ -298,6 +294,29 @@ const TeamComparisonPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {/* --- 🎯 Matches Played Field Added Here --- */}
+                                    <tr>
+                                        <td className="fw-bold">Matches Played</td>
+                                        <td className="text-center">
+                                            <input
+                                                type="number"
+                                                className="form-control form-control-sm text-center"
+                                                value={editedData.matches || 0}
+                                                onChange={(e) => {
+                                                    let val = e.target.value;
+                                                    // Allow only whole numbers for matches
+                                                    val = val.replace(/[^0-9]/g, ""); 
+                                                    handleInputChange('matches', val);
+                                                }}
+                                                min="0"
+                                                step="1"
+                                                disabled={saving}
+                                                style={{ width: "120px", margin: "0 auto" }}
+                                            />
+                                        </td>
+                                    </tr>
+
+                                    {/* --- Other Stats (Mapped) --- */}
                                     {statLabels.map(({ key, label }) => (
                                         <tr key={key}>
                                             <td className="fw-semibold">{label}</td>
@@ -307,17 +326,15 @@ const TeamComparisonPage = () => {
                                                     className="form-control form-control-sm text-center"
                                                     value={editedData[key] || 0}
                                                     onChange={(e) => {
-                                                        let val = e.target.value;
-                                                        // remove decimal part (block . and anything after)
-                                                        val = val.replace(/\D/g, "");
+                                                        // Allows decimals for stats like Pass % (step="any")
+                                                        let val = e.target.value; 
                                                         handleInputChange(key, val);
                                                     }}
                                                     min="0"
-                                                    step="1"
+                                                    step="any"
                                                     disabled={saving}
                                                     style={{ width: "120px", margin: "0 auto" }}
                                                 />
-
                                             </td>
                                         </tr>
                                     ))}

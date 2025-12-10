@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import CustomersHeader from '@/components/Players/PlayersHeader'
 import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import Footer from '@/components/shared/Footer'
-import topTost from '../utils/topTost'; // Assuming topTost is in a file like topTost.js
+import topTost from '../utils/topTost'; // Assuming topTost is for success toasts
+
 
 
 const BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL;
@@ -49,6 +49,7 @@ const Comparison = () => {
                 rawTeam: json.rawTeam || {},
             });
 
+            // Initialize editedData with raw player stats (includes 'matches')
             setEditedData(json.rawPlayer || {});
 
         } catch (err) {
@@ -62,8 +63,12 @@ const Comparison = () => {
         const p = parseFloat(playerVal) || 0;
         const t = parseFloat(teamVal) || 0;
 
-        if (t === 0) return 0;
-
+        // Minutes is not compared to team average minutes
+        if (t === 0 || p === 0) return 0;
+        
+        // This calculates player average / team average
+        // For stats like cautions or ejections, a lower number is better, but the comparison here
+        // simply shows the ratio to the team average.
         return ((p / t) * 100).toFixed(1);
     };
 
@@ -73,6 +78,7 @@ const Comparison = () => {
         return "text-secondary";
     };
 
+    // statLabels for the main table and the modal, excluding 'matches' from the list
     const statLabels = [
         { key: "goals", label: "Goals" },
         { key: "assists", label: "Assists" },
@@ -82,7 +88,8 @@ const Comparison = () => {
         { key: "key_passes", label: "Key Passes" },
         { key: "tackles", label: "Tackles" },
         { key: "pass_completion_pct", label: "Pass %" },
-        { key: "minutes", label: "Minutes" },
+        // Minutes is the total raw minutes, but the average is used in the comparison table
+        { key: "minutes", label: "Minutes" }, 
         { key: "cautions", label: "Cautions" },
         { key: "ejections", label: "Ejections" },
         { key: "progressive_carries", label: "Progressive Carries" },
@@ -90,62 +97,25 @@ const Comparison = () => {
     ];
 
     const handleEditClick = () => {
+        // Ensure we use the raw data for editing
         setEditedData(comparisonData?.rawPlayer || {});
         setEditModalOpen(true);
     };
 
     const handleInputChange = (key, value) => {
+        // Use parseInt for integer fields like matches, or parseFloat for others if needed
+        const processedValue = key === 'matches' || key === 'minutes' ? parseInt(value) || 0 : parseFloat(value) || 0;
+        
         setEditedData(prev => ({
             ...prev,
-            [key]: parseFloat(value) || 0
+            [key]: processedValue
         }));
     };
 
-    // const handleSaveChanges = async () => {
-    //     if (!playerId) {
-    //         alert("Player ID not available");
-    //         return;
-    //     }
-
-    //     setSaving(true);
-    //     try {
-    //         const token = localStorage.getItem("authToken");
-
-    //         const response = await fetch(`${BASE_URL}/api/coach/stats/stats/update/${playerId}`, {
-    //             method: "PUT",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //                 Authorization: `Bearer ${token}`,
-    //             },
-    //             body: JSON.stringify(editedData),
-    //         });
-
-    //         if (!response.ok) {
-    //             throw new Error("Failed to update statistics");
-    //         }
-
-    //         alert("Statistics updated successfully!");
-    //         setEditModalOpen(false);
-    //         loadComparisonData();
-
-    //     } catch (error) {
-    //         alert("Failed to update statistics: " + error.message);
-    //     } finally {
-    //         setSaving(false);
-    //     }
-    // };
-
-    // Assume topTost and topTostError (defined below) are imported/available here
- 
-    // Import the error toaster logic as well (assuming you create a separate function for error)
-    // For simplicity, let's include the error logic directly or assume an improved topTost import
-
     // --- Updated handleSaveChanges function ---
-    
     const handleSaveChanges = async () => {
-        // 1. Player ID Check (Using Toast for consistency)
+        // 1. Player ID Check 
         if (!playerId) {
-            // We will show an error toast here instead of alert
             topTostError("Player ID is missing. Cannot save changes.");
             return;
         }
@@ -153,6 +123,9 @@ const Comparison = () => {
         setSaving(true);
         try {
             const token = localStorage.getItem("authToken");
+            
+            // Remove ps_id, player_id, created_at before sending for update
+            const { ps_id, player_id, created_at, ...dataToUpdate } = editedData; 
 
             const response = await fetch(`${BASE_URL}/api/coach/stats/stats/update/${playerId}`, {
                 method: "PUT",
@@ -160,24 +133,27 @@ const Comparison = () => {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(editedData),
+                body: JSON.stringify(dataToUpdate),
             });
 
             if (!response.ok) {
                 // Throwing an error for non-200 status codes
-                const errorText = await response.text();
-                throw new Error(errorText || "Failed to update statistics");
+                const errorJson = await response.json();
+                throw new Error(errorJson.message || "Failed to update statistics");
             }
 
-            // 2. SUCCESS: Replace alert with topTost
-            topTost("شماریات کامیابی سے اپ ڈیٹ ہو گئیں!");
+            // 2. SUCCESS: Show success toast
+            topTost("Statistics updated successfully!");
 
             setEditModalOpen(false);
+            // Reload data to show updated averages
             loadComparisonData();
 
         } catch (error) {
-            // 3. ERROR: Replace alert with a proper error toast
-            topTostError("اپ ڈیٹ فیل ہو گئی: " + error.message);
+            // 3. ERROR: Show a proper error toast
+            // Fallback for simple error objects
+            const errorMessage = typeof error.message === 'string' ? error.message : "An unknown error occurred.";
+            topTostError("Update failed: " + errorMessage);
 
         } finally {
             setSaving(false);
@@ -186,6 +162,7 @@ const Comparison = () => {
     // ------------------------------------------
 
     const handleCancelEdit = () => {
+        // Reset editedData to the original raw data on cancel
         setEditedData(comparisonData?.rawPlayer || {});
         setEditModalOpen(false);
     };
@@ -212,6 +189,7 @@ const Comparison = () => {
                         <h4 className="mb-0">Player vs Team Comparison</h4>
 
                         <div>
+                            {/* Assuming only non-ADMIN roles can edit */}
                             {user?.role !== "ADMIN" && (
                                 <button
                                     className="btn btn-warning d-flex align-items-center gap-2"
@@ -239,7 +217,7 @@ const Comparison = () => {
                         </div>
                     ) : (
                         <div className="table-responsive">
-                            <h5>Per-Match Averages</h5>
+                            <h5>Per-Match Averages (Matches Played: {safeRaw.matches || 0})</h5>
 
                             <table className="table table-striped table-hover">
                                 <thead className="text-white bg-dark">
@@ -263,11 +241,12 @@ const Comparison = () => {
                                         return (
                                             <tr key={key}>
                                                 <td className="fw-semibold">{label}</td>
-                                                <td className="text-center">{rawPlayerVal}</td>
+                                                {/* Display raw total value */}
+                                                <td className="text-center">{rawPlayerVal}</td> 
                                                 <td className="text-center">{playerAvg.toFixed(2)}</td>
                                                 <td className="text-center">{teamAvg.toFixed(2)}</td>
                                                 <td className={`text-center fw-bold ${getDiffColor(diff)}`}>
-                                                    {diff > 0 ? "+" : ""}{diff}%
+                                                    {diff}%
                                                 </td>
                                             </tr>
                                         );
@@ -281,7 +260,7 @@ const Comparison = () => {
 
             <Footer />
 
-            {/* --- Modal --- */}
+            {/* --- Edit Modal --- */}
             {editModalOpen && (
                 <div
                     className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
@@ -292,7 +271,7 @@ const Comparison = () => {
                         style={{ width: "90%", maxWidth: 800, maxHeight: "85vh", overflowY: "auto" }}
                     >
                         <div className="d-flex justify-content-between mb-3">
-                            <h5>Edit Player Statistics</h5>
+                            <h5>Edit Player Statistics (Raw Totals)</h5>
                             <button className="btn btn-sm btn-danger" onClick={handleCancelEdit} disabled={saving}>
                                 Close
                             </button>
@@ -307,6 +286,27 @@ const Comparison = () => {
                             </thead>
 
                             <tbody>
+                                {/* --- 🎯 Matches Field Added Here (Manual Entry) --- */}
+                                <tr>
+                                    <td className="fw-bold">Matches Played</td>
+                                    <td className="text-center">
+                                        <input
+                                            type="number"
+                                            className="form-control form-control-sm text-center"
+                                            value={editedData.matches || 0}
+                                            onChange={(e) => {
+                                                // Ensures only digits are entered
+                                                let val = e.target.value.replace(/[^0-9]/g, ""); 
+                                                handleInputChange('matches', val);
+                                            }}
+                                            min="0"
+                                            step="1"
+                                            disabled={saving}
+                                            style={{ width: "120px", margin: "0 auto" }}
+                                        />
+                                    </td>
+                                </tr>
+                                {/* --- Other Stats start here (Mapped) --- */}
                                 {statLabels.map(({ key, label }) => (
                                     <tr key={key}>
                                         <td>{label}</td>
@@ -316,11 +316,12 @@ const Comparison = () => {
                                                 className="form-control form-control-sm text-center"
                                                 value={editedData[key] || 0}
                                                 onChange={(e) => {
-                                                    let val = e.target.value.replace(/\D/g, "");
+                                                    // Allows decimals for stats like Pass %
+                                                    let val = e.target.value; 
                                                     handleInputChange(key, val);
                                                 }}
                                                 min="0"
-                                                step="1"
+                                                step="any"
                                                 disabled={saving}
                                                 style={{ width: "120px", margin: "0 auto" }}
                                             />

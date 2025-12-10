@@ -219,61 +219,61 @@ const PlayersTable = () => {
   // CRUD MODAL
   // -------------------------
 
-const sendEvaluation = async (player_id = null) => {
-  const playerIds = player_id ? [player_id] : selectedPlayers;
+  const sendEvaluation = async (player_id = null) => {
+    const playerIds = player_id ? [player_id] : selectedPlayers;
 
-  if (playerIds.length === 0) {
-    return alert("Please select at least one player");
-  }
-
-  try {
-    setSending(true);
-
-    let result;
-
-    if (player_id) {
-      // SINGLE
-      const res = await fetch(`${BASE_URL}/api/coach/players/send-evaluation`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ player_id }),
-      });
-
-      result = await res.json();
-      if (!res.ok) throw new Error(result.message);
-
-      // 🔥 TOAST HERE
-      topTost("Successfully Sent");
-
-    } else {
-      // BULK
-      const res = await fetch(`${BASE_URL}/api/coach/players/send-bulk-evaluation`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ player_ids: playerIds }),
-      });
-
-      result = await res.json();
-      if (!res.ok) throw new Error(result.message);
-
-      // 🔥 TOAST HERE
-      if (result.sent > 0) {
-        topTost(`Successfully sent to ${result.sent} player(s)`);
-      }
+    if (playerIds.length === 0) {
+      return alert("Please select at least one player");
     }
 
-  } catch (err) {
-    alert("Error: " + err.message);
-  } finally {
-    setSending(false);
-  }
-};
+    try {
+      setSending(true);
+
+      let result;
+
+      if (player_id) {
+        // SINGLE
+        const res = await fetch(`${BASE_URL}/api/coach/players/send-evaluation`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ player_id }),
+        });
+
+        result = await res.json();
+        if (!res.ok) throw new Error(result.message);
+
+        // 🔥 TOAST HERE
+        topTost("Successfully Sent");
+
+      } else {
+        // BULK
+        const res = await fetch(`${BASE_URL}/api/coach/players/send-bulk-evaluation`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ player_ids: playerIds }),
+        });
+
+        result = await res.json();
+        if (!res.ok) throw new Error(result.message);
+
+        // 🔥 TOAST HERE
+        if (result.sent > 0) {
+          topTost(`Successfully sent to ${result.sent} player(s)`);
+        }
+      }
+
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setSending(false);
+    }
+  };
 
 
 
@@ -457,6 +457,7 @@ const sendEvaluation = async (player_id = null) => {
       size: 120,
       cell: ({ row }) => {
         const p = row.original;
+
         return (
           <Dropdown
             triggerClass="btn btn-sm btn-outline-secondary"
@@ -467,25 +468,21 @@ const sendEvaluation = async (player_id = null) => {
                 icon: <FiUsers />,
                 onClick: () => navigate(`/player/profile/${p.p_id}`),
               },
-              // ... other items that are common or for coach only
-
-              // Edit and Delete are only for coach
-              ...(role === "coach" ? [{
-                label: "Edit",
-                icon: <FiEdit />,
-                onClick: () => openEditModal(p),
-              }] : []),
-              ...(role === "coach" ? [{
-                label: "Delete",
-                icon: <FiTrash2 />,
-                className: "text-danger",
-                onClick: () => alert("Add delete API"),
-              }] : []),
+              ...(role === "coach"
+                ? [
+                  {
+                    label: "Edit",
+                    icon: <FiEdit />,
+                    onClick: () => openEditModal(p),
+                  },
+                ]
+                : []),
             ]}
           />
         );
       },
     },
+
   ];
 
   return (
